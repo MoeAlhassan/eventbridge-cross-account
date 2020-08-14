@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CFN 1/2 -- Spins up custom bus and cwlog group as a target to receive events from the sender account. 
+
+Parameters:
+  SenderAccountID:
+    Type: String
+  CustomBusName:
+    Type: String
+    Default: custom-bus
+
+Resources:
+  
+  CustomBus:
+    Type: AWS::Events::EventBus
+    Properties: 
+      Name: !Ref CustomBusName
+
+  CustomEventBusPolicy: 
+    Type: AWS::Events::EventBusPolicy
+    Properties: 
+        Action: "events:PutEvents"
+        EventBusName: !Ref CustomBus
+        Principal: !Ref SenderAccountID
+        StatementId: "SenderAccount"
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: events-from-sender
+  
+  CustomBusTarget:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: send events from the account in the event pattern to the cloudwatch log group created above.
+      EventBusName: !Ref CustomBus 
+      EventPattern: {"account": [!Ref SenderAccountID]}
+      State: "ENABLED"
+      Targets:
+      - Arn: !GetAtt CloudWatchLogGroup.Arn
+        Id: "cross-account-target"
+
+  EventBridgeInvokeCWLogsRole:
+    Type: AWS::IAM::Role 
+    Properties:
+      RoleName: EventBridgeInvokeCWLogsRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - events.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: "EventBridgeInvokeCWLogsRolePolicy"
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Sid: EventBridgetoCWLogsAccess
+            Effect: "Allow"
+            Action:
+            - logs:CreateLogStream
+            - logs:DescribeLogStreams
+            - logs:PutLogEvents
+            - logs:GetLogEvents
+            Resource: !GetAtt CloudWatchLogGroup.Arn
+
+Outputs:
+  CustomBusArn:
+    Description: Arn of the CustomBus to use as input in the next template
+    Value: !GetAtt CustomBus.Arn

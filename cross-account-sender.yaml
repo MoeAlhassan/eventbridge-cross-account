@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:  CFN 2/2 -- spins up resources to send events from one account (sender) to another (receiver) in the same region. 
+
+Parameters:
+  CustomEventBusArn:
+    Type: String
+
+Resources:
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Send events every minute from sender to custom event bus in the receiver account. 
+      ScheduleExpression: "rate(1 minute)"
+      State:  "ENABLED"
+      Targets:
+      - Arn: !Ref CustomEventBusArn
+        RoleArn:  !GetAtt EventBridgeIamRole.Arn
+        Id: "Example-Event"
+
+
+
