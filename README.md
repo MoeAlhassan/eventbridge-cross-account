@@ -44,6 +44,7 @@ The Custom Bus ARN will be under `Outputs` listed as `OutputValue`
 ### Step 4: Create Stack for Sender Account
 
 Create the resources used to send events. Using the CLI: 
+
 ```aws cloudformation create-stack --stack-name **NameForYourStack**  --template-body file://cross-account-sender.yaml --capabilities "CAPABILITY_NAMED_IAM" --parameters ParameterKey=CustomEventBusArn,ParameterValue=**CustomBusArnFromStep3```
 
 ### Step 5: Check for Events
